@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        .button {
+            border: none;
+            width: 100px;
+            height: 50px;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+        }
+    </style>
+    <meta charset="utf-8">
+    <title>Homepage</title>
+    <script src="jquery-3.1.1.min.js"></script>
+    <script type="text/javascript" src="smoothie.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var receiver;
+        $(document).ready(() => {
+            var socket = io();
+            socket.on('pin13_state', data => {
+                var state = data;
+                $('#pin13').text(state);
+                if (state == "ON") {
+                    $('#pin13').css("background-color", "#4CAF50");
+                    $('#pin13').css("color", "white");
+                } else {
+                    $('#pin13').css("background-color", "#e7e7e7");
+                    $('#pin13').css("color", "black");
+                }
+            });
+            $('#pin13').click(() => {
+                var msg = "Button Pressed!"
+                socket.emit('pin13_change', msg);
+            })
+
+            socket.on('sensor_data', packet => {
+              var tempVal = packet.t;
+              var hmdtVal = packet.h;
+              $('#tempButton').text = tempVal;
+            })
+        });
+    </script>
+</head>
+
+<body>
+    <h1>Homepage</h1>
+    <canvas id="tempCanvas" width="800" height="100"></canvas>
+    <canvas id="hmdtCanvas" width="800" height="100"></canvas>
+    <script>
+        var tempChart = new SmoothieChart();
+        tempChart.streamTo(document.getElementById("tempCanvas"), 5000);
+
+        var hmdtChart = new SmoothieChart();
+        hmdtChart.streamTo(document.getElementById("hmdtCanvas"), 5000);
+    </script>
+
+    <button class="button" id="tempButton"></button>
+</body>
+
+</html>
