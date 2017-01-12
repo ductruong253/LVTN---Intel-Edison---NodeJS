@@ -17,7 +17,8 @@
         }
     </style>
     <meta charset="utf-8">
-    <title>Homepage</title>
+    <title>NewMech IoT Controller</title>
+    <script type="text/javascript" src="canvasjs.min.js"></script>
     <script src="jquery-3.1.1.min.js"></script>
     <script type="text/javascript" src="smoothie.js"></script>
     <script src="/socket.io/socket.io.js"></script>
@@ -40,29 +41,100 @@
                 var msg = "Button Pressed!"
                 socket.emit('pin13_change', msg);
             })
+            var data = {};
 
             socket.on('sensor_data', packet => {
-              var tempVal = packet.t;
-              var hmdtVal = packet.h;
-              $('#tempButton').text = tempVal;
-            })
+                    data.tempVal = packet.temp;
+                    data.hmdtVal = packet.humid;
+                    $('#tempButton').text(data.tempVal);
+                    $('#tempButton').css("background-color", "#4CAF50");
+                    $('#tempButton').css("color", "white");
+                    $('#humidButton').text(data.hmdtVal);
+                    $('#humidButton').css("background-color", "#4CAF50");
+                    $('#humidButton').css("color", "white");
+                })
+                // Data
+            var line1 = new TimeSeries();
+            var line2 = new TimeSeries();
+            // Add a random value to each line every second
+            setInterval(function() {
+                    line1.append(new Date().getTime(), data.tempVal.toFixed(2));
+                    line2.append(new Date().getTime(), data.hmdtVal.toFixed(2));
+                }, 10000)
+                // Add to SmoothieChart
+            tempChart.addTimeSeries(line1);
+            hmdtChart.addTimeSeries(line2);
         });
+    </script>
+
+    <script type="text/javascript">
+        window.onload = function() {
+
+            var dps = []; // dataPoints
+
+            var chart = new CanvasJS.Chart("chartContainer", {
+                title: {
+                    text: "Live Random Data"
+                },
+                data: [{
+                    type: "line",
+                    dataPoints: dps
+                }]
+            });
+
+            var xVal = 0;
+            var yVal = 100;
+            var updateInterval = 100;
+            var dataLength = 500; // number of dataPoints visible at any point
+
+            var updateChart = function(count) {
+                count = count || 1;
+                // count is number of times loop runs to generate random dataPoints.
+
+                for (var j = 0; j < count; j++) {
+                    yVal = yVal + Math.round(5 + Math.random() * (-5 - 5));
+                    dps.push({
+                        x: xVal,
+                        y: yVal
+                    });
+                    xVal++;
+                };
+                if (dps.length > dataLength) {
+                    dps.shift();
+                }
+
+                chart.render();
+
+            };
+
+            // generates first set of dataPoints
+            updateChart(dataLength);
+
+            // update chart after specified time.
+            setInterval(function() {
+                updateChart()
+            }, updateInterval);
+
+        }
     </script>
 </head>
 
 <body>
-    <h1>Homepage</h1>
-    <canvas id="tempCanvas" width="800" height="100"></canvas>
-    <canvas id="hmdtCanvas" width="800" height="100"></canvas>
+    <h1 style="font-family:verdana">NewMech IoT Controller</h1>
+    <div id="chartContainer" style="height: 300px; width:100%;"></div>
+    <canvas id="tempCanvas" width="800" height="200"></canvas>
+    <canvas id="hmdtCanvas" width="800" height="200"></canvas>
     <script>
         var tempChart = new SmoothieChart();
-        tempChart.streamTo(document.getElementById("tempCanvas"), 5000);
+        tempChart.streamTo(document.getElementById("tempCanvas"), 10000);
 
         var hmdtChart = new SmoothieChart();
-        hmdtChart.streamTo(document.getElementById("hmdtCanvas"), 5000);
+        hmdtChart.streamTo(document.getElementById("hmdtCanvas"), 10000);
     </script>
-
+    <br>
     <button class="button" id="tempButton"></button>
+    <button class="button" id="humidButton"></button>
+    <br>
 </body>
 
 </html>
