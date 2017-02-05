@@ -15,6 +15,28 @@
             margin: 4px 2px;
             cursor: pointer;
         }
+
+        .display_button {
+            border: none;
+            width: 300px;
+            height: 50px;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+        }
+
+        .div {
+            border: 1px solid black;
+            background-color: lightblue;
+            padding-top: 50px;
+            padding-right: 15%;
+            padding-bottom: 50px;
+            padding-left: 15%;
+        }
     </style>
     <meta charset="utf-8">
     <title>NewMech IoT Controller</title>
@@ -24,6 +46,7 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         var receiver;
+        var data = {};
         $(document).ready(() => {
             var socket = io();
             socket.on('pin13_state', data => {
@@ -41,100 +64,115 @@
                 var msg = "Button Pressed!"
                 socket.emit('pin13_change', msg);
             })
-            var data = {};
 
             socket.on('sensor_data', packet => {
-                    data.tempVal = packet.temp;
-                    data.hmdtVal = packet.humid;
-                    $('#tempButton').text(data.tempVal);
-                    $('#tempButton').css("background-color", "#4CAF50");
-                    $('#tempButton').css("color", "white");
-                    $('#humidButton').text(data.hmdtVal);
-                    $('#humidButton').css("background-color", "#4CAF50");
-                    $('#humidButton').css("color", "white");
-                })
-                // Data
-            var line1 = new TimeSeries();
-            var line2 = new TimeSeries();
-            // Add a random value to each line every second
-            setInterval(function() {
-                    line1.append(new Date().getTime(), data.tempVal.toFixed(2));
-                    line2.append(new Date().getTime(), data.hmdtVal.toFixed(2));
-                }, 10000)
-                // Add to SmoothieChart
-            tempChart.addTimeSeries(line1);
-            hmdtChart.addTimeSeries(line2);
+                data.tempVal = packet.temp;
+                data.hmdtVal = packet.humid;
+                $('#tempButton').text(data.tempVal);
+                $('#tempButton').css("background-color", "#4CAF50");
+                $('#tempButton').css("color", "white");
+                $('#humidButton').text(data.hmdtVal);
+                $('#humidButton').css("background-color", "#4CAF50");
+                $('#humidButton').css("color", "white");
+            })
         });
-    </script>
-
-    <script type="text/javascript">
         window.onload = function() {
-
-            var dps = []; // dataPoints
-
-            var chart = new CanvasJS.Chart("chartContainer", {
+            //Tempchart
+            var tempDps = []; // dataPoints
+            var tempChart = new CanvasJS.Chart("Tempchart", {
                 title: {
-                    text: "Live Random Data"
+                    text: "Temperature Data"
                 },
                 data: [{
                     type: "line",
-                    dataPoints: dps
+                    dataPoints: tempDps
                 }]
             });
-
-            var xVal = 0;
-            var yVal = 100;
-            var updateInterval = 100;
+            var tempX = new Date();
+            var tempY = 100;
+            var updateInterval = 5000; //update time
             var dataLength = 500; // number of dataPoints visible at any point
-
-            var updateChart = function(count) {
+            var updateTempChart = function(count) {
                 count = count || 1;
                 // count is number of times loop runs to generate random dataPoints.
-
+                tempY = 100;
                 for (var j = 0; j < count; j++) {
-                    yVal = yVal + Math.round(5 + Math.random() * (-5 - 5));
-                    dps.push({
-                        x: xVal,
-                        y: yVal
+                    tempY = data.tempVal;
+                    tempX = new Date();
+                    tempDps.push({
+                        x: tempX,
+                        y: tempY
                     });
-                    xVal++;
+                    tempX++;
                 };
-                if (dps.length > dataLength) {
-                    dps.shift();
+                if (tempDps.length > dataLength) {
+                    tempDps.shift();
                 }
-
-                chart.render();
-
+                tempChart.render();
             };
-
             // generates first set of dataPoints
-            updateChart(dataLength);
+            updateTempChart(dataLength);
+            // update chart after specified time.
 
+            //Humidchart
+            var hmdtDps = []; // dataPoints
+            var hmdtChart = new CanvasJS.Chart("Humidchart", {
+                title: {
+                    text: "Humidity Data"
+                },
+                data: [{
+                    type: "line",
+                    dataPoints: hmdtDps
+                }]
+            });
+            var hmdtX = new Date();
+            var hmdtY = 100;
+            var updateHmdtChart = function(count) {
+                count = count || 1;
+                // count is number of times loop runs to generate random dataPoints.
+                hmdtY = 100;
+                for (var j = 0; j < count; j++) {
+                    hmdtY = data.hmdtVal;
+                    hmdtX = new Date();
+                    hmdtDps.push({
+                        x: hmdtX,
+                        y: hmdtY
+                    });
+                    hmdtX++;
+                };
+                if (hmdtDps.length > dataLength) {
+                    hmdtDps.shift();
+                }
+                hmdtChart.render();
+            };
+            // generates first set of dataPoints
+            updateHmdtChart(dataLength);
             // update chart after specified time.
             setInterval(function() {
-                updateChart()
+                updateTempChart();
+                updateHmdtChart();
             }, updateInterval);
-
         }
     </script>
 </head>
 
 <body>
     <h1 style="font-family:verdana">NewMech IoT Controller</h1>
-    <div id="chartContainer" style="height: 300px; width:100%;"></div>
-    <canvas id="tempCanvas" width="800" height="200"></canvas>
-    <canvas id="hmdtCanvas" width="800" height="200"></canvas>
-    <script>
-        var tempChart = new SmoothieChart();
-        tempChart.streamTo(document.getElementById("tempCanvas"), 10000);
+    <div class="div">
+        <div id="Tempchart" style="height: 300px; width: 100%;"></div>
+        <div id="Humidchart" style="height: 300px; width: 100%;"></div>
+    </div>
+    <div class="div">
+        <button class="display_button">Current Temperature</button>
+        <button class="button" id="tempButton"></button>
+        <br>
+        <button class="display_button">Current Humidity</button>
+        <button class="button" id="humidButton"></button>
+        <button class="button" id="pin13"></button>
 
-        var hmdtChart = new SmoothieChart();
-        hmdtChart.streamTo(document.getElementById("hmdtCanvas"), 10000);
-    </script>
-    <br>
-    <button class="button" id="tempButton"></button>
-    <button class="button" id="humidButton"></button>
-    <br>
+    </div>
+
+
 </body>
 
 </html>

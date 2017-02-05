@@ -1,3 +1,9 @@
+var mraa = require('mraa');
+var pin13 = new mraa.Gpio(13);
+pin13.dir(mraa.DIR_OUT);
+var state = true;
+
+
 var express = require('express');
 var app = express();
 var server = require('http').Server(app);
@@ -10,15 +16,18 @@ var io = require('socket.io')(server);
 server.listen(3000, () => console.log('Server started'));
 
 app.get('/', function (req,res) {
+  state = pin13.read();
   res.render('home')
   console.log('connected');
 
 })
-var t;
-var h;
+var sensorData;
+//client gui http request co kem du lieu thu thap duoc tu cam bien
 app.get('/sensor/:temp/:hmdt', function(req, res) {
-    t = (req.params.temp)/100;
-    h = (req.params.hmdt)/100
+    var t = (req.params.temp)/100;
+    var h = (req.params.hmdt)/100;
+    sensorData = {temp: t, humid: h}
+
     var time = new Date();
     console.log('----------------------------------');
     console.log(time);
@@ -26,11 +35,25 @@ app.get('/sensor/:temp/:hmdt', function(req, res) {
     console.log('Current humidity: ' + h);
 
 });
-
+//socketIO tra ket qua ve cho browser de hien thi thoi gian thuc
 io.on('connection', socket => {
-  console.log('Client connected!');
+  //gui du lieu thu thap duoc den phia client
   setInterval(function () {
-    io.emit('sensor_data', {temperature: t, humidity: h});
+    io.emit('sensor_data', sensorData);
   }, 5000)
+  //dieu khien cac cong I/O
+  console.log('Client connected!');
+  var pin13State = (pin13.read()? "ON" : "OFF");
+  console.log(pin13State);
+  io.emit('pin13_state', pin13State);
+  socket.on('pin13_change', data => {
+    console.log(data);
+    console.log(state);
+    pin13.write(state?0:1);
+    state = pin13.read();
+    pin13State = (state? "ON" : "OFF");
+    io.emit('pin13_state', pin13State);
+    console.log(pin13State);
+  })
 
 })
